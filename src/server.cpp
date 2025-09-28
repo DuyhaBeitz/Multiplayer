@@ -96,5 +96,6 @@ void UpdateServer() {
 
         ENetPacket* packet = CreatePacket<GameStatePacketData>(MSG_GAME_STATE, data);
         server->Broadcast(packet);        
+        server->Update();
     }
 }

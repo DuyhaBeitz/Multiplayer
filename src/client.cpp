@@ -54,12 +54,12 @@ int main() {
             input.left = IsKeyDown(KEY_A);
             input.up = IsKeyPressed(KEY_W);
             data.input = input;
-            data.tick = tick;
+            data.tick = tick+1;
 
             GameEvent event;
             event.event_id = EV_PLAYER_INPUT;
             event.data = input;
-            game_manager.AddEvent(event, id, tick);
+            game_manager.AddEvent(event, id, tick+1);
             client->SendPacket(CreatePacket<PlayerInputPacketData>(MSG_PLAYER_INPUT, data));
             game_state = game_manager.ApplyEvents(game_state, tick, tick+1);
         }
@@ -115,9 +115,10 @@ void Init() {
     });
     client->SetOnReceive(OnReceive);
 
-    if (!client->ConnectToServer("127.0.0.1", 7777)) {
-        client->RequestConnectToServer("45.159.79.84", 7777);
-    }    
+    // if (!client->ConnectToServer("127.0.0.1", 7777)) {
+    //     client->RequestConnectToServer("45.159.79.84", 7777);
+    // }    
+    client->RequestConnectToServer("45.159.79.84", 7777);
 }
 
 void OnReceive(ENetEvent event) {
@@ -137,7 +138,7 @@ void OnReceive(ENetEvent event) {
         GameStatePacketData data = ExtractData<GameStatePacketData>(event.packet);
 
         auto rec_state = DeserializeGameState(data.text, MAX_STRING_LENGTH);
-        game_state = game_manager.ApplyEvents(rec_state, data.tick, tick);
+        game_state = game_manager.ApplyEvents(rec_state, data.tick, tick+1);
 
         }
         break;
