@@ -24,6 +24,7 @@ bool connected = false;
 
 void Init();
 void OnReceive(ENetEvent event);
+uint32_t CalculateTickWinthPing(uint32_t tick);
 
 int main() {
     Init();
@@ -113,15 +114,17 @@ void Init() {
     });
     client->SetOnReceive(OnReceive);
 
-    client->RequestConnectToServer("127.0.0.1", 7777);
-    //client->RequestConnectToServer("45.159.79.84", 7777);
+    //client->RequestConnectToServer("127.0.0.1", 7777);
+    client->RequestConnectToServer("45.159.79.84", 7777);
 }
 
 void OnReceive(ENetEvent event) {
     MessageType msgType = static_cast<MessageType>(event.packet->data[0]);
     switch (msgType) {
     case MSG_GAME_TICK:
-        tick = ExtractData<uint32_t>(event.packet);
+        {
+        tick = CalculateTickWinthPing(ExtractData<uint32_t>(event.packet));
+        }
         break;
     case MSG_PLAYER_ID:
         id = ExtractData<uint32_t>(event.packet);
@@ -140,4 +143,10 @@ void OnReceive(ENetEvent event) {
     default:
         break;
     }
+}
+
+uint32_t CalculateTickWinthPing(uint32_t tick) {
+    float delta_sec = client->GetPeer()->roundTripTime / 2 / 1000;
+    uint32_t delta_tick = delta_sec * iters_per_sec;
+    return tick + delta_tick;
 }

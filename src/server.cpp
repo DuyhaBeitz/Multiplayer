@@ -83,9 +83,9 @@ void OnRecieve(ENetEvent event)
 void UpdateServer() {
     server->Update();
 
-    if (tick % iters_per_sec == 0) { // once per second
-        //game_state = game_manager.ApplyEventsAsOneTick(game_state);
-        game_state = game_manager.ApplyEvents(game_state, tick-iters_per_sec, tick);
+    uint32_t tick_period = iters_per_sec/10;
+    if (tick % tick_period == 0) { // once per second
+        game_state = game_manager.ApplyEvents(game_state, tick-tick_period, tick);
 
         char buffer[MAX_STRING_LENGTH];
         SerializeGameState(game_state, buffer, sizeof(buffer));
