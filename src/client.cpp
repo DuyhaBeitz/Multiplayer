@@ -42,6 +42,7 @@ int main() {
         else {
             BeginDrawing();
             DrawText(std::to_string(tick).c_str(), 100, 100, 64, WHITE);
+            DrawText(std::to_string(client->GetPeer()->roundTripTime).c_str(), 100, 200, 64, WHITE);
             game_manager.Draw(game_state);
             ClearBackground(DARKGRAY);
             EndDrawing();
@@ -114,8 +115,9 @@ void Init() {
     });
     client->SetOnReceive(OnReceive);
 
-    //client->RequestConnectToServer("127.0.0.1", 7777);
-    client->RequestConnectToServer("45.159.79.84", 7777);
+    if (!client->ConnectToServer("127.0.0.1", 7777)) {
+        client->RequestConnectToServer("45.159.79.84", 7777);
+    }    
 }
 
 void OnReceive(ENetEvent event) {
