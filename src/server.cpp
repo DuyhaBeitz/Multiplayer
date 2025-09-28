@@ -4,6 +4,7 @@
 #include <thread>
 
 GameState game_state{};
+GameState old_game_state{};
 Game game_manager{};
 uint32_t tick = 0;
 
@@ -83,9 +84,12 @@ void OnRecieve(ENetEvent event)
 void UpdateServer() {
     server->Update();
 
-    uint32_t tick_period = 3*iters_per_sec;
+    constexpr uint32_t tick_period = iters_per_sec/10; // broadcast game state every 100 ms
+    constexpr uint32_t receive_tick_period = iters_per_sec; // allow late received events
+    
     if (tick % tick_period == 0) {
-        game_state = game_manager.ApplyEvents(game_state, tick-tick_period, tick);
+        game_state = game_manager.ApplyEvents(old_game_state, tick-receive_tick_period, tick);
+        old_game_state = game_manager.ApplyEvents(old_game_state, tick-receive_tick_period, tick-receive_tick_period+tick_period);
 
         char buffer[MAX_STRING_LENGTH];
         SerializeGameState(game_state, buffer, sizeof(buffer));
@@ -96,6 +100,5 @@ void UpdateServer() {
 
         ENetPacket* packet = CreatePacket<GameStatePacketData>(MSG_GAME_STATE, data);
         server->Broadcast(packet);        
-        server->Update();
     }
 }
