@@ -1,0 +1,39 @@
+#pragma once
+#include <cstdint>
+#include <map>
+#include <vector>
+#include <iostream>
+
+template<typename GameStateType, typename GameEventType>
+class GameBase {
+private:
+    // usage: m_event_history[tick][event_index].first() = player id, not all events use this
+    // usage: m_event_history[tick][event_index].first() = event
+    std::map<uint32_t, std::vector<std::pair<uint32_t, GameEventType>>> m_event_history;
+    std::map<uint32_t, GameStateType> m_state_history;
+
+public:
+    void AddEvent(GameEventType event, uint32_t id, uint32_t tick) {
+        m_event_history[tick].push_back({id, event});
+    }
+
+    GameStateType ApplyEvents(const GameStateType& start_state, uint32_t start_tick, uint32_t end_tick) {        
+        GameStateType result_state = start_state;
+        uint32_t currentTick = start_tick;
+
+        while (currentTick < end_tick) {
+            for (auto& [id, event] : m_event_history[currentTick]) {
+                ApplyEvent(result_state, event, id);
+            }
+            UpdateGameLogic(result_state);
+            currentTick++;
+        }
+
+        return result_state;
+    }
+
+    
+    virtual void ApplyEvent(GameStateType& state, const GameEventType& event, uint32_t id) = 0;
+    virtual void Draw(const GameStateType& state) = 0;
+    virtual void UpdateGameLogic(GameStateType& state) = 0;
+};
