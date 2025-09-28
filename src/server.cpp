@@ -83,7 +83,7 @@ void OnRecieve(ENetEvent event)
 void UpdateServer() {
     server->Update();
 
-    uint32_t tick_period = iters_per_sec;
+    uint32_t tick_period = 3*iters_per_sec;
     if (tick % tick_period == 0) {
         game_state = game_manager.ApplyEvents(game_state, tick-tick_period, tick);
 
