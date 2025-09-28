@@ -17,6 +17,19 @@ public:
         m_event_history[tick].push_back({id, event});
     }
 
+    GameStateType ApplyEventsAsOneTick(const GameStateType& start_state) {
+        GameStateType result_state = start_state;
+        for (auto& [tick, events] : m_event_history) {
+            for (auto& [id, event] : events) {
+                ApplyEvent(result_state, event, id);
+            }
+        }
+        UpdateGameLogic(result_state);
+        m_event_history.clear();
+        
+        return result_state;
+    }
+
     GameStateType ApplyEvents(const GameStateType& start_state, uint32_t start_tick, uint32_t end_tick) {        
         GameStateType result_state = start_state;
         uint32_t currentTick = start_tick;
@@ -32,7 +45,15 @@ public:
         return result_state;
     }
 
-    
+    void DropEventHistory(uint32_t last_dropped_tick) {
+        for (auto& [tick, events] : m_event_history) {
+            if (tick <= last_dropped_tick) {
+                m_event_history.erase(tick);
+            }
+        }
+    }
+
+
     virtual void ApplyEvent(GameStateType& state, const GameEventType& event, uint32_t id) = 0;
     virtual void Draw(const GameStateType& state) = 0;
     virtual void UpdateGameLogic(GameStateType& state) = 0;

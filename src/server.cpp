@@ -25,7 +25,7 @@ int main(){
     auto next_tick = std::chrono::steady_clock::now();
     while (running) {
         auto now = std::chrono::steady_clock::now();
-        int k = 10;
+        int k = 1;
         while (now >= next_tick) {
             for (int i = 0; i < k; i++) {
                 UpdateTick();
@@ -72,7 +72,7 @@ void OnRecieve(ENetEvent event)
 void UpdateTick() {
     server->Update();
 
-    game_state = game_manager.ApplyEvents(game_state, tick, tick+1);
+    game_state = game_manager.ApplyEventsAsOneTick(game_state);
 
     char buffer[MAX_STRING_LENGTH];
     SerializeGameState(game_state, buffer, sizeof(buffer));

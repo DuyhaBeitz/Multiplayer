@@ -45,8 +45,9 @@ int main() {
             EndDrawing();
 
             PlayerInputPacketData data;
-            data.input.move.x = IsKeyDown(KEY_D) - IsKeyDown(KEY_A);
-            data.input.move.y = IsKeyDown(KEY_S) - IsKeyDown(KEY_W);
+            data.input.right = IsKeyDown(KEY_D);
+            data.input.left = IsKeyDown(KEY_A);
+            data.input.up = IsKeyPressed(KEY_W);
             tick += 1;
             data.tick = tick;
             client->SendPacket(CreatePacket<PlayerInputPacketData>(MSG_PLAYER_INPUT, data));
@@ -57,7 +58,8 @@ int main() {
 
 void Init() {
     EasyNetInit();
-    InitWindow(1000, 1000, "Retained GUI minimal example");
+    InitWindow(1000, 1000, "Multiplayer");
+    SetWindowState(FLAG_WINDOW_TOPMOST);
     SetTargetFPS(dt);
 
     client = std::make_shared<EasyNetClient>();
@@ -98,7 +100,7 @@ void Init() {
     });
     client->SetOnReceive(OnReceive);
 
-    client->RequestConnectToServer("127.0.0.1", 7777);
+    //client->RequestConnectToServer("127.0.0.1", 7777);
 }
 
 void OnReceive(ENetEvent event) {

@@ -7,8 +7,13 @@
 
 #include <nlohmann/json.hpp>
 
-constexpr int iters_per_sec = 30;
+constexpr int iters_per_sec = 60;
 constexpr double dt = 1.f/iters_per_sec;
+constexpr double gravity = 40;
+constexpr double floor_lvl = 500;
+constexpr double hor_speed = 1;
+constexpr double jump_impulse = 30;
+
 
 enum EventId {
     EV_PLAYER_JOIN = 0,
@@ -20,7 +25,11 @@ enum EventId {
 struct PlayerJoin {};
 struct PlayerLeave {};
 struct PlayerInput {
-    Vector2 move;
+    bool right;
+    bool left;
+    bool up;
+
+    float GetX() { return right - left; }
 };
 
 struct GameEvent {
@@ -90,8 +99,8 @@ public:
         case EV_PLAYER_INPUT:
             if (std::holds_alternative<PlayerInput>(event.data)) {
                 auto input = std::get<PlayerInput>(event.data);
-                state.players[id].velocity.x += input.move.x * dt * 2;
-                std::cout << "Here" << std::endl;
+                state.players[id].velocity.x += input.GetX() * dt * hor_speed;
+                if (input.up && state.players[id].position.y == floor_lvl) state.players[id].velocity.y -= jump_impulse;
             }
             break; 
 
@@ -108,12 +117,12 @@ public:
 
     virtual void UpdateGameLogic(GameState& state) {
         for (auto& [id, player] : state.players) {
-            player.velocity.y += 10*dt;
+            player.velocity.y += gravity*dt;
             player.position += player.velocity;
-            float floor_lvl = 500;
             if (player.position.y > floor_lvl) {
                 player.position.y = floor_lvl;
             }
+            player.velocity *= 0.9;
         }
     }
 };
