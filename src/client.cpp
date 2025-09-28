@@ -54,12 +54,12 @@ int main() {
             input.left = IsKeyDown(KEY_A);
             input.up = IsKeyPressed(KEY_W);
             data.input = input;
-            data.tick = tick+1;
+            data.tick = tick;
 
             GameEvent event;
             event.event_id = EV_PLAYER_INPUT;
             event.data = input;
-            game_manager.AddEvent(event, id, tick+1);
+            game_manager.AddEvent(event, id, tick);
             client->SendPacket(CreatePacket<PlayerInputPacketData>(MSG_PLAYER_INPUT, data));
             game_state = game_manager.ApplyEvents(game_state, tick, tick+1);
         }
