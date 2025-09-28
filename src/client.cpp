@@ -9,6 +9,7 @@
 GameState game_state{};
 Game game_manager{};
 uint32_t tick = 0;
+uint32_t id = 0;
 
 std::shared_ptr<EasyNetClient> client;
 
@@ -45,13 +46,23 @@ int main() {
             EndDrawing();
 
             PlayerInputPacketData data;
-            data.input.right = IsKeyDown(KEY_D);
-            data.input.left = IsKeyDown(KEY_A);
-            data.input.up = IsKeyPressed(KEY_W);
-            tick += 1;
+            PlayerInput input;
+            
+            input.right = IsKeyDown(KEY_D);
+            input.left = IsKeyDown(KEY_A);
+            input.up = IsKeyPressed(KEY_W);
+            data.input = input;
             data.tick = tick;
+
+            GameEvent event;
+            event.event_id = EV_PLAYER_INPUT;
+            event.data = input;
+            game_manager.AddEvent(event, id, tick);
             client->SendPacket(CreatePacket<PlayerInputPacketData>(MSG_PLAYER_INPUT, data));
+            game_state = game_manager.ApplyEvents(game_state, tick, tick+1);
         }
+        tick += 1;
+        std::cout << tick << std::endl;
     }
     return 0;
 }
@@ -60,7 +71,7 @@ void Init() {
     EasyNetInit();
     InitWindow(1000, 1000, "Multiplayer");
     SetWindowState(FLAG_WINDOW_TOPMOST);
-    SetTargetFPS(dt);
+    SetTargetFPS(iters_per_sec);
 
     client = std::make_shared<EasyNetClient>();
     client->CreateClient();
@@ -100,17 +111,27 @@ void Init() {
     });
     client->SetOnReceive(OnReceive);
 
-    //client->RequestConnectToServer("127.0.0.1", 7777);
+    client->RequestConnectToServer("127.0.0.1", 7777);
+    //client->RequestConnectToServer("45.159.79.84", 7777);
 }
 
 void OnReceive(ENetEvent event) {
     MessageType msgType = static_cast<MessageType>(event.packet->data[0]);
     switch (msgType) {
+    case MSG_GAME_TICK:
+        tick = ExtractData<uint32_t>(event.packet);
+        break;
+    case MSG_PLAYER_ID:
+        id = ExtractData<uint32_t>(event.packet);
+        break;
+        
     case MSG_GAME_STATE:
         {
         GameStatePacketData data = ExtractData<GameStatePacketData>(event.packet);
-        game_state = DeserializeGameState(data.text, MAX_STRING_LENGTH);
-        tick = data.tick;
+
+        auto rec_state = DeserializeGameState(data.text, MAX_STRING_LENGTH);
+        game_state = game_manager.ApplyEvents(rec_state, data.tick, tick);
+
         }
         break;
 

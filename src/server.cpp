@@ -38,6 +38,7 @@ int main(){
             );
         }
         std::this_thread::sleep_until(next_tick);
+        std::cout << tick << std::endl;
     }
     return 0;
 }
@@ -47,6 +48,8 @@ void OnConnect(ENetEvent event) {
     game_event.event_id = EV_PLAYER_JOIN;
     uint32_t id = enet_peer_get_id(event.peer);
     game_manager.AddEvent(game_event, id, tick);
+    server->SendTo(id, CreatePacket<uint32_t>(MSG_GAME_TICK, tick));
+    server->SendTo(id, CreatePacket<uint32_t>(MSG_PLAYER_ID, id));
 }
 
 void OnDisconnect(ENetEvent event) {

@@ -11,7 +11,7 @@ constexpr int iters_per_sec = 60;
 constexpr double dt = 1.f/iters_per_sec;
 constexpr double gravity = 40;
 constexpr double floor_lvl = 500;
-constexpr double hor_speed = 1;
+constexpr double hor_speed = 30;
 constexpr double jump_impulse = 30;
 
 
