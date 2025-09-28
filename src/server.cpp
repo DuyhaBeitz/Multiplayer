@@ -11,6 +11,7 @@ std::unique_ptr<EasyNetServer> server;
 bool running = true;
 
 void OnConnect(ENetEvent event);
+void OnDisconnect(ENetEvent event);
 void OnRecieve(ENetEvent event);
 void UpdateTick();
 
@@ -20,6 +21,7 @@ int main(){
     server = std::make_unique<EasyNetServer>();
     server->CreateServer();
     server->SetOnConnect(OnConnect);
+    server->SetOnDisconnect(OnDisconnect);
     server->SetOnReceive(OnRecieve);
     
     auto next_tick = std::chrono::steady_clock::now();
@@ -43,6 +45,13 @@ int main(){
 void OnConnect(ENetEvent event) {
     GameEvent game_event;
     game_event.event_id = EV_PLAYER_JOIN;
+    uint32_t id = enet_peer_get_id(event.peer);
+    game_manager.AddEvent(game_event, id, tick);
+}
+
+void OnDisconnect(ENetEvent event) {
+    GameEvent game_event;
+    game_event.event_id = EV_PLAYER_LEAVE;
     uint32_t id = enet_peer_get_id(event.peer);
     game_manager.AddEvent(game_event, id, tick);
 }
