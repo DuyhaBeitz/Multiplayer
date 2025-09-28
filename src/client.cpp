@@ -64,6 +64,8 @@ int main() {
         tick += 1;
         std::cout << tick << std::endl;
     }
+    client->RequestDisconnectFromServer();
+    client->Update();
     return 0;
 }
 

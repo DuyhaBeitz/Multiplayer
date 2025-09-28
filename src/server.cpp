@@ -13,7 +13,7 @@ bool running = true;
 void OnConnect(ENetEvent event);
 void OnDisconnect(ENetEvent event);
 void OnRecieve(ENetEvent event);
-void UpdateTick();
+void UpdateServer();
 
 int main(){
     std::cout << "Server running" << std::endl;
@@ -27,14 +27,13 @@ int main(){
     auto next_tick = std::chrono::steady_clock::now();
     while (running) {
         auto now = std::chrono::steady_clock::now();
-        int k = 1;
+
         while (now >= next_tick) {
-            for (int i = 0; i < k; i++) {
-                UpdateTick();
-                tick++;
-            }
+            UpdateServer();
+            tick++;
+
             next_tick += std::chrono::duration_cast<std::chrono::steady_clock::duration>(
-                std::chrono::duration<double>(dt*k)
+                std::chrono::duration<double>(dt)
             );
         }
         std::this_thread::sleep_until(next_tick);
@@ -81,18 +80,21 @@ void OnRecieve(ENetEvent event)
     }
 }
 
-void UpdateTick() {
+void UpdateServer() {
     server->Update();
 
-    game_state = game_manager.ApplyEventsAsOneTick(game_state);
+    if (tick % iters_per_sec == 0) { // once per second
+        //game_state = game_manager.ApplyEventsAsOneTick(game_state);
+        game_state = game_manager.ApplyEvents(game_state, tick-iters_per_sec, tick);
 
-    char buffer[MAX_STRING_LENGTH];
-    SerializeGameState(game_state, buffer, sizeof(buffer));
-    
-    GameStatePacketData data;
-    std::strncpy(data.text, buffer, sizeof(buffer));
-    data.tick = tick;
+        char buffer[MAX_STRING_LENGTH];
+        SerializeGameState(game_state, buffer, sizeof(buffer));
+        
+        GameStatePacketData data;
+        std::strncpy(data.text, buffer, sizeof(buffer));
+        data.tick = tick;
 
-    ENetPacket* packet = CreatePacket<GameStatePacketData>(MSG_GAME_STATE, data);
-    server->Broadcast(packet);
+        ENetPacket* packet = CreatePacket<GameStatePacketData>(MSG_GAME_STATE, data);
+        server->Broadcast(packet);        
+    }
 }
