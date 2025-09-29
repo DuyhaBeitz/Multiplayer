@@ -140,9 +140,10 @@ void Init() {
     });
     client->SetOnReceive(OnReceive);
 
-    if (!client->ConnectToServer("127.0.0.1", 7777)) {
-        client->RequestConnectToServer("45.159.79.84", 7777);
-    }    
+    client->RequestConnectToServer("45.159.79.84", 7777);
+    // if (!client->ConnectToServer("127.0.0.1", 7777)) {
+    //     client->RequestConnectToServer("45.159.79.84", 7777);
+    // }    
 }
 
 void OnReceive(ENetEvent event) {
