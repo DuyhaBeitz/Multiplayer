@@ -45,8 +45,10 @@ int main() {
             DrawText(std::to_string(tick).c_str(), 100, 100, 64, WHITE);
             DrawText(std::to_string(client->GetPeer()->roundTripTime).c_str(), 100, 200, 64, WHITE);
             
-            //game_manager.Draw(game_state, GameDrawData{GREEN});
-            game_manager.Draw(local_game_state, GameDrawData{GREEN});            
+            Color color = GREEN;
+            game_manager.Draw(game_state, &color);
+            color = RED;
+            //game_manager.Draw(local_game_state, &color);            
 
             ClearBackground(DARKGRAY);
             EndDrawing();
@@ -134,10 +136,9 @@ void OnReceive(ENetEvent event) {
     MessageType msgType = static_cast<MessageType>(event.packet->data[0]);
     switch (msgType) {
     case MSG_GAME_TICK:
-        {
         tick = CalculateTickWinthPing(ExtractData<uint32_t>(event.packet));
-        }
         break;
+
     case MSG_PLAYER_ID:
         id = ExtractData<uint32_t>(event.packet);
         break;

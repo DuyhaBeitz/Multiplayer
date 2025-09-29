@@ -46,10 +46,6 @@ struct GameState {
     std::map<uint32_t, PlayerState> players;
 };
 
-struct GameDrawData {
-    Color color;
-};
-
 #define MAX_STRING_LENGTH 1024
 
 inline size_t SerializeGameState(const GameState& state, char* buffer, size_t max_len) {
@@ -88,7 +84,7 @@ inline GameState DeserializeGameState(const char* buffer, size_t len) {
     return state;
 }
 
-class Game : public GameBase<GameState, GameEvent, GameDrawData> {
+class Game : public GameBase<GameState, GameEvent> {
 public:
     virtual void ApplyEvent(GameState& state, const GameEvent& event, uint32_t id) {
         switch (event.event_id) {
@@ -113,9 +109,10 @@ public:
         }
     }
 
-    virtual void Draw(const GameState& state, GameDrawData data) {
+    virtual void Draw(const GameState& state, const void* data) {
         for (const auto& [id, player] : state.players) {
-            DrawCircleV(player.position, 10, data.color);
+            const Color* color = static_cast<const Color*>(data);
+            DrawCircleV(player.position, 10, *color);
         }
     }
 

@@ -84,13 +84,20 @@ void OnRecieve(ENetEvent event)
 void UpdateServer() {
     server->Update();
 
-    constexpr uint32_t tick_period = iters_per_sec*1; // broadcast game state every 100 ms
-    constexpr uint32_t receive_tick_period = iters_per_sec*2; // allow late received events
+    constexpr uint32_t tick_period = iters_per_sec/2; // broadcast game state every 100 ms
+    constexpr uint32_t receive_tick_period = iters_per_sec; // allow late received events
     constexpr uint32_t send_tick_period = iters_per_sec*20; // sync client's tick with server's tick
-    
+
     if (tick % tick_period == 0) {
-        game_state = game_manager.ApplyEvents(old_game_state, tick-receive_tick_period, tick);
-        old_game_state = game_manager.ApplyEvents(old_game_state, tick-receive_tick_period, tick-receive_tick_period+tick_period);
+        
+        uint32_t current_tick = tick;
+        uint32_t previous_tick = tick - tick_period;
+
+        uint32_t current_old_tick = current_tick - receive_tick_period;
+        uint32_t previous_old_tick = previous_tick - receive_tick_period;
+
+        old_game_state = game_manager.ApplyEvents(old_game_state, previous_old_tick, current_old_tick);
+        game_state = game_manager.ApplyEvents(old_game_state, current_old_tick, current_tick);
 
         char buffer[MAX_STRING_LENGTH];
         SerializeGameState(game_state, buffer, sizeof(buffer));
