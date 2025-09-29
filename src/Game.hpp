@@ -6,6 +6,7 @@
 #include <raymath.h>
 
 #include <nlohmann/json.hpp>
+#include <fstream>
 
 constexpr int iters_per_sec = 60;
 constexpr double dt = 1.f/iters_per_sec;
@@ -134,24 +135,28 @@ public:
     }
 
     void OutputHistory() {
+        bool to_file = true;
+        std::ofstream file("output.txt");
+        std::ostream* out = to_file ? &file : &std::cout;
+    
         for (auto& [tick, events] : m_event_history) {
-            std::cout << tick << ":" << events.size() << "\n";
+            *out << tick << ":" << events.size() << "\n";
             for (auto& [id, event] : events) {
                 switch (event.event_id) {
                 case EV_PLAYER_INPUT:
                     {
                     auto input = std::get<PlayerInput>(event.data);
-                    std::cout << "\tINPUT\t" << "X: " << input.GetX() << " up: " << input.up << std::endl;
+                    *out << "\tINPUT\t" << "X: " << input.GetX() << " up: " << input.up << std::endl;
                     }
                     break;
                 case EV_PLAYER_JOIN:
-                    std::cout << "\tJOIN\n" << std::endl;
+                    *out << "\tJOIN\n" << std::endl;
                     break;
                 case EV_PLAYER_LEAVE:
-                    std::cout << "\tLEAVE\n" << std::endl;
+                    *out << "\tLEAVE\n" << std::endl;
                     break;
                 }         
-                std::cout << std::endl;       
+                *out << std::endl;       
             }
         }
     }
