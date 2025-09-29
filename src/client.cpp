@@ -78,7 +78,7 @@ int main() {
             
             game_state = game_manager.ApplyEvents(game_state, tick, tick+1);
             //local_game_state = game_manager.ApplyEvents(local_game_state, tick, tick+1);
-            if (GetTime() > 23) {
+            if (GetTime() > 4) {
                 game_manager.OutputHistory();
 
                 GameState state = {};

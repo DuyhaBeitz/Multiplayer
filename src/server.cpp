@@ -98,7 +98,7 @@ void UpdateServer() {
 
     constexpr uint32_t tick_period = iters_per_sec/2; // broadcast game state every 100 ms
     constexpr uint32_t receive_tick_period = iters_per_sec; // allow late received events
-    constexpr uint32_t send_tick_period = iters_per_sec*20; // sync client's tick with server's tick
+    constexpr uint32_t send_tick_period = iters_per_sec*1; // sync client's tick with server's tick
 
     if (tick % tick_period == 0) {
         
