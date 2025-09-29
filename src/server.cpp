@@ -84,8 +84,9 @@ void OnRecieve(ENetEvent event)
 void UpdateServer() {
     server->Update();
 
-    constexpr uint32_t tick_period = iters_per_sec/10; // broadcast game state every 100 ms
-    constexpr uint32_t receive_tick_period = iters_per_sec; // allow late received events
+    constexpr uint32_t tick_period = iters_per_sec*1; // broadcast game state every 100 ms
+    constexpr uint32_t receive_tick_period = iters_per_sec*2; // allow late received events
+    constexpr uint32_t send_tick_period = iters_per_sec*20; // sync client's tick with server's tick
     
     if (tick % tick_period == 0) {
         game_state = game_manager.ApplyEvents(old_game_state, tick-receive_tick_period, tick);
@@ -100,5 +101,9 @@ void UpdateServer() {
 
         ENetPacket* packet = CreatePacket<GameStatePacketData>(MSG_GAME_STATE, data);
         server->Broadcast(packet);        
+    }
+
+    if (tick % send_tick_period == 0) {
+        server->Broadcast(CreatePacket<uint32_t>(MSG_GAME_TICK, tick));        
     }
 }

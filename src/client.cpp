@@ -7,6 +7,7 @@
 #include <iostream>
 
 GameState game_state{};
+GameState local_game_state{};
 Game game_manager{};
 uint32_t tick = 0;
 uint32_t id = 0;
@@ -43,7 +44,10 @@ int main() {
             BeginDrawing();
             DrawText(std::to_string(tick).c_str(), 100, 100, 64, WHITE);
             DrawText(std::to_string(client->GetPeer()->roundTripTime).c_str(), 100, 200, 64, WHITE);
-            game_manager.Draw(game_state);
+            
+            //game_manager.Draw(game_state, GameDrawData{GREEN});
+            game_manager.Draw(local_game_state, GameDrawData{GREEN});            
+
             ClearBackground(DARKGRAY);
             EndDrawing();
 
@@ -62,6 +66,12 @@ int main() {
             game_manager.AddEvent(event, id, tick);
             client->SendPacket(CreatePacket<PlayerInputPacketData>(MSG_PLAYER_INPUT, data));
             game_state = game_manager.ApplyEvents(game_state, tick, tick+1);
+            local_game_state = game_manager.ApplyEvents(local_game_state, tick, tick+1);
+
+            if (tick % iters_per_sec*50 == 0) {
+                local_game_state = game_state;
+                std::cout << "synced" << std::endl;
+            }
         }
         tick += 1;
         std::cout << tick << std::endl;
@@ -115,10 +125,9 @@ void Init() {
     });
     client->SetOnReceive(OnReceive);
 
-    // if (!client->ConnectToServer("127.0.0.1", 7777)) {
-    //     client->RequestConnectToServer("45.159.79.84", 7777);
-    // }    
-    client->RequestConnectToServer("45.159.79.84", 7777);
+    if (!client->ConnectToServer("127.0.0.1", 7777)) {
+        client->RequestConnectToServer("45.159.79.84", 7777);
+    }    
 }
 
 void OnReceive(ENetEvent event) {
@@ -138,8 +147,7 @@ void OnReceive(ENetEvent event) {
         GameStatePacketData data = ExtractData<GameStatePacketData>(event.packet);
 
         auto rec_state = DeserializeGameState(data.text, MAX_STRING_LENGTH);
-        game_state = game_manager.ApplyEvents(rec_state, data.tick, tick+1);
-
+        game_state = game_manager.ApplyEvents(rec_state, data.tick, tick);
         }
         break;
 

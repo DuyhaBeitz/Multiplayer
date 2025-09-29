@@ -4,7 +4,7 @@
 #include <vector>
 #include <iostream>
 
-template<typename GameStateType, typename GameEventType>
+template<typename GameStateType, typename GameEventType, typename GameDrawDataType>
 class GameBase {
 private:
     // usage: m_event_history[tick][event_index].first() = player id, not all events use this
@@ -55,6 +55,6 @@ public:
 
 
     virtual void ApplyEvent(GameStateType& state, const GameEventType& event, uint32_t id) = 0;
-    virtual void Draw(const GameStateType& state) = 0;
+    virtual void Draw(const GameStateType& state, GameDrawDataType data) = 0;
     virtual void UpdateGameLogic(GameStateType& state) = 0;
 };

@@ -11,7 +11,7 @@ constexpr int iters_per_sec = 60;
 constexpr double dt = 1.f/iters_per_sec;
 constexpr double gravity = 40;
 constexpr double floor_lvl = 500;
-constexpr double hor_speed = 30;
+constexpr double hor_speed = 60;
 constexpr double jump_impulse = 30;
 
 
@@ -44,6 +44,10 @@ struct PlayerState {
 
 struct GameState {
     std::map<uint32_t, PlayerState> players;
+};
+
+struct GameDrawData {
+    Color color;
 };
 
 #define MAX_STRING_LENGTH 1024
@@ -84,7 +88,7 @@ inline GameState DeserializeGameState(const char* buffer, size_t len) {
     return state;
 }
 
-class Game : public GameBase<GameState, GameEvent> {
+class Game : public GameBase<GameState, GameEvent, GameDrawData> {
 public:
     virtual void ApplyEvent(GameState& state, const GameEvent& event, uint32_t id) {
         switch (event.event_id) {
@@ -109,9 +113,9 @@ public:
         }
     }
 
-    virtual void Draw(const GameState& state) {
+    virtual void Draw(const GameState& state, GameDrawData data) {
         for (const auto& [id, player] : state.players) {
-            DrawCircleV(player.position, 10, RED);
+            DrawCircleV(player.position, 10, data.color);
         }
     }
 
