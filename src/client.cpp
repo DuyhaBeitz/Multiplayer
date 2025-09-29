@@ -6,8 +6,13 @@
 #include <memory>
 #include <iostream>
 
+bool received_game = false;
+GameState first_received_game{};
+uint32_t last_received_tick = 0;
+uint32_t first_received_game_tick = 0;
+
 GameState game_state{};
-GameState local_game_state{};
+
 Game game_manager{};
 uint32_t tick = 0;
 uint32_t id = 0;
@@ -53,30 +58,38 @@ int main() {
             ClearBackground(DARKGRAY);
             EndDrawing();
 
-            PlayerInputPacketData data;
             PlayerInput input;
             
             input.right = IsKeyDown(KEY_D);
             input.left = IsKeyDown(KEY_A);
             input.up = IsKeyPressed(KEY_W);
-            data.input = input;
-            data.tick = tick;
 
-            GameEvent event;
-            event.event_id = EV_PLAYER_INPUT;
-            event.data = input;
-            game_manager.AddEvent(event, id, tick);
-            client->SendPacket(CreatePacket<PlayerInputPacketData>(MSG_PLAYER_INPUT, data));
-            game_state = game_manager.ApplyEvents(game_state, tick, tick+1);
-            local_game_state = game_manager.ApplyEvents(local_game_state, tick, tick+1);
+            if (input.GetX() != 0 || input.up) {
+                GameEvent event;
+                event.event_id = EV_PLAYER_INPUT;
+                event.data = input;
+                game_manager.AddEvent(event, id, tick);
 
-            if (tick % iters_per_sec*50 == 0) {
-                local_game_state = game_state;
-                std::cout << "synced" << std::endl;
+                PlayerInputPacketData data;
+                data.input = input;
+                data.tick = tick;
+                client->SendPacket(CreatePacket<PlayerInputPacketData>(MSG_PLAYER_INPUT, data, ENET_PACKET_FLAG_UNRELIABLE_FRAGMENT));
             }
+            
+            game_state = game_manager.ApplyEvents(game_state, tick, tick+1);
+            //local_game_state = game_manager.ApplyEvents(local_game_state, tick, tick+1);
+            if (GetTime() > 23) {
+                game_manager.OutputHistory();
+
+                GameState state = {};
+                char buffer[MAX_STRING_LENGTH];
+                SerializeGameState(game_manager.ApplyEvents(first_received_game, first_received_game_tick, last_received_tick), buffer, MAX_STRING_LENGTH);
+                std::cout << last_received_tick << std::endl;
+                std::cout << std::endl << buffer << std::endl;
+                CloseWindow();
+            }
+            tick += 1;
         }
-        tick += 1;
-        std::cout << tick << std::endl;
     }
     client->RequestDisconnectFromServer();
     client->Update();
@@ -137,6 +150,7 @@ void OnReceive(ENetEvent event) {
     switch (msgType) {
     case MSG_GAME_TICK:
         tick = CalculateTickWinthPing(ExtractData<uint32_t>(event.packet));
+        last_received_tick = tick;
         break;
 
     case MSG_PLAYER_ID:
@@ -146,8 +160,12 @@ void OnReceive(ENetEvent event) {
     case MSG_GAME_STATE:
         {
         GameStatePacketData data = ExtractData<GameStatePacketData>(event.packet);
-
         auto rec_state = DeserializeGameState(data.text, MAX_STRING_LENGTH);
+        if (!received_game) {
+            first_received_game = rec_state;
+            first_received_game_tick = data.tick;
+            received_game = true;
+        }
         game_state = game_manager.ApplyEvents(rec_state, data.tick, tick);
         }
         break;

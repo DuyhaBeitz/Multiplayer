@@ -6,7 +6,7 @@
 
 template<typename GameStateType, typename GameEventType>
 class GameBase {
-private:
+protected:
     // usage: m_event_history[tick][event_index].first() = player id, not all events use this
     // usage: m_event_history[tick][event_index].first() = event
     std::map<uint32_t, std::vector<std::pair<uint32_t, GameEventType>>> m_event_history;
@@ -35,8 +35,10 @@ public:
         uint32_t currentTick = start_tick;
 
         while (currentTick < end_tick) {
-            for (auto& [id, event] : m_event_history[currentTick]) {
-                ApplyEvent(result_state, event, id);
+            if (m_event_history.find(currentTick) != m_event_history.end()) {
+                for (auto& [id, event] : m_event_history[currentTick]) {
+                    ApplyEvent(result_state, event, id);
+                }
             }
             UpdateGameLogic(result_state);
             currentTick++;

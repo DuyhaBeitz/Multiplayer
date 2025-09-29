@@ -86,10 +86,14 @@ inline GameState DeserializeGameState(const char* buffer, size_t len) {
 
 class Game : public GameBase<GameState, GameEvent> {
 public:
+    PlayerState InitNewPlayer(const GameState& state, uint32_t id) {
+        return PlayerState{Vector2{0, 0}};
+    }
+
     virtual void ApplyEvent(GameState& state, const GameEvent& event, uint32_t id) {
         switch (event.event_id) {
         case EV_PLAYER_JOIN:
-            state.players[id] = PlayerState{Vector2{100, 100}};
+            state.players[id] = InitNewPlayer(state, id);
             break;
 
         case EV_PLAYER_LEAVE:
@@ -99,8 +103,10 @@ public:
         case EV_PLAYER_INPUT:
             if (std::holds_alternative<PlayerInput>(event.data)) {
                 auto input = std::get<PlayerInput>(event.data);
-                state.players[id].velocity.x += input.GetX() * dt * hor_speed;
-                if (input.up && state.players[id].position.y == floor_lvl) state.players[id].velocity.y -= jump_impulse;
+                if (state.players.find(id) != state.players.end()) {
+                    state.players[id].velocity.x += input.GetX() * dt * hor_speed;
+                    if (input.up && state.players[id].position.y == floor_lvl) state.players[id].velocity.y -= jump_impulse;
+                }
             }
             break; 
 
@@ -124,6 +130,29 @@ public:
                 player.position.y = floor_lvl;
             }
             player.velocity *= 0.9;
+        }
+    }
+
+    void OutputHistory() {
+        for (auto& [tick, events] : m_event_history) {
+            std::cout << tick << ":" << events.size() << "\n";
+            for (auto& [id, event] : events) {
+                switch (event.event_id) {
+                case EV_PLAYER_INPUT:
+                    {
+                    auto input = std::get<PlayerInput>(event.data);
+                    std::cout << "\tINPUT\t" << "X: " << input.GetX() << " up: " << input.up << std::endl;
+                    }
+                    break;
+                case EV_PLAYER_JOIN:
+                    std::cout << "\tJOIN\n" << std::endl;
+                    break;
+                case EV_PLAYER_LEAVE:
+                    std::cout << "\tLEAVE\n" << std::endl;
+                    break;
+                }         
+                std::cout << std::endl;       
+            }
         }
     }
 };

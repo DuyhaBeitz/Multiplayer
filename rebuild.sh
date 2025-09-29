@@ -1,2 +1,2 @@
 cmake -S . -B build
-cmake --build build --verbose
+cmake --build build
