@@ -21,10 +21,14 @@ void OnDisconnect(ENetEvent event);
 void OnRecieve(ENetEvent event);
 void UpdateServer();
 
+#define WINDOW_VISUALIZATION 0
+
 int main(){
-    InitWindow(1000, 1000, "Server");
-    SetWindowState(FLAG_WINDOW_TOPMOST);
-    SetTargetFPS(iters_per_sec);
+    if (WINDOW_VISUALIZATION) {
+        InitWindow(1000, 1000, "Server");
+        SetWindowState(FLAG_WINDOW_TOPMOST);
+        SetTargetFPS(iters_per_sec);
+    }    
 
     std::cout << "Server running" << std::endl;
     EasyNetInit();
@@ -34,31 +38,34 @@ int main(){
     server->SetOnDisconnect(OnDisconnect);
     server->SetOnReceive(OnRecieve);
     
-    while (!WindowShouldClose() && running) {
-        UpdateServer();
-        tick++;        
+    if (WINDOW_VISUALIZATION) {
+        while (!WindowShouldClose() && running) {
+            UpdateServer();
+            tick++;        
 
-        BeginDrawing();
-        ClearBackground(GRAY);
-        Color color = BLUE;
-        game_manager.Draw(game_state, &color);
-        EndDrawing();
+            BeginDrawing();
+            ClearBackground(GRAY);
+            Color color = BLUE;
+            game_manager.Draw(game_state, &color);
+            EndDrawing();
+        }
     }
+    else {
+        auto next_tick = std::chrono::steady_clock::now();
+        while (running) {
+            auto now = std::chrono::steady_clock::now();
 
-    // auto next_tick = std::chrono::steady_clock::now();
-    // while (running) {
-    //     auto now = std::chrono::steady_clock::now();
+            while (now >= next_tick) {
+                UpdateServer();
+                tick++;
 
-    //     while (now >= next_tick) {
-    //         UpdateServer();
-    //         tick++;
-
-    //         next_tick += std::chrono::duration_cast<std::chrono::steady_clock::duration>(
-    //             std::chrono::duration<double>(dt)
-    //         );
-    //     }
-    //     std::this_thread::sleep_until(next_tick);
-    // }
+                next_tick += std::chrono::duration_cast<std::chrono::steady_clock::duration>(
+                    std::chrono::duration<double>(dt)
+                );
+            }
+            std::this_thread::sleep_until(next_tick);
+        }
+    }
     
     CloseWindow();
     return 0;
