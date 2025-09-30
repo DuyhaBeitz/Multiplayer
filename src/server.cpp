@@ -21,7 +21,7 @@ void OnDisconnect(ENetEvent event);
 void OnRecieve(ENetEvent event);
 void UpdateServer();
 
-#define WINDOW_VISUALIZATION 1
+#define WINDOW_VISUALIZATION 0
 
 int main(){
     if (WINDOW_VISUALIZATION) {
