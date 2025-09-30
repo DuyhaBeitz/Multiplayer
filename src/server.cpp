@@ -22,6 +22,10 @@ void OnRecieve(ENetEvent event);
 void UpdateServer();
 
 int main(){
+    InitWindow(1000, 1000, "Server");
+    SetWindowState(FLAG_WINDOW_TOPMOST);
+    SetTargetFPS(iters_per_sec);
+
     std::cout << "Server running" << std::endl;
     EasyNetInit();
     server = std::make_unique<EasyNetServer>();
@@ -30,20 +34,33 @@ int main(){
     server->SetOnDisconnect(OnDisconnect);
     server->SetOnReceive(OnRecieve);
     
-    auto next_tick = std::chrono::steady_clock::now();
-    while (running) {
-        auto now = std::chrono::steady_clock::now();
+    while (!WindowShouldClose() && running) {
+        UpdateServer();
+        tick++;        
 
-        while (now >= next_tick) {
-            UpdateServer();
-            tick++;
-
-            next_tick += std::chrono::duration_cast<std::chrono::steady_clock::duration>(
-                std::chrono::duration<double>(dt)
-            );
-        }
-        std::this_thread::sleep_until(next_tick);
+        BeginDrawing();
+        ClearBackground(GRAY);
+        Color color = BLUE;
+        game_manager.Draw(game_state, &color);
+        EndDrawing();
     }
+
+    // auto next_tick = std::chrono::steady_clock::now();
+    // while (running) {
+    //     auto now = std::chrono::steady_clock::now();
+
+    //     while (now >= next_tick) {
+    //         UpdateServer();
+    //         tick++;
+
+    //         next_tick += std::chrono::duration_cast<std::chrono::steady_clock::duration>(
+    //             std::chrono::duration<double>(dt)
+    //         );
+    //     }
+    //     std::this_thread::sleep_until(next_tick);
+    // }
+    
+    CloseWindow();
     return 0;
 }
 
@@ -96,15 +113,14 @@ void OnRecieve(ENetEvent event)
 void UpdateServer() {
     server->Update();
 
-    constexpr uint32_t tick_period = iters_per_sec/2; // broadcast game state every 100 ms
+    constexpr uint32_t tick_period = iters_per_sec/10; // broadcast game state every 100 ms
     constexpr uint32_t receive_tick_period = iters_per_sec; // allow late received events
     constexpr uint32_t send_tick_period = iters_per_sec*2; // sync client's tick with server's tick
 
     if (tick % tick_period == 0) {
-        
-        uint32_t current_tick = tick;
-        uint32_t previous_tick = tick - tick_period;
+        uint32_t current_tick = tick-receive_tick_period;
 
+        uint32_t previous_tick = current_tick - tick_period;
         uint32_t current_old_tick = current_tick - receive_tick_period;
         uint32_t previous_old_tick = previous_tick - receive_tick_period;
 
@@ -116,7 +132,7 @@ void UpdateServer() {
         
         GameStatePacketData data;
         std::strncpy(data.text, buffer, sizeof(buffer));
-        data.tick = tick;
+        data.tick = current_tick;
 
         ENetPacket* packet = CreatePacket<GameStatePacketData>(MSG_GAME_STATE, data);
         server->Broadcast(packet);     

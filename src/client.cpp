@@ -6,6 +6,8 @@
 #include <memory>
 #include <iostream>
 
+GameState local_game_state{};
+
 bool received_game = false;
 GameState first_received_game{};
 uint32_t last_received_tick = 0;
@@ -53,7 +55,7 @@ int main() {
             Color color = GREEN;
             game_manager.Draw(game_state, &color);
             color = RED;
-            //game_manager.Draw(local_game_state, &color);            
+            game_manager.Draw(local_game_state, &color);            
 
             ClearBackground(DARKGRAY);
             EndDrawing();
@@ -77,17 +79,19 @@ int main() {
             }
             
             game_state = game_manager.ApplyEvents(game_state, tick, tick+1);
-            //local_game_state = game_manager.ApplyEvents(local_game_state, tick, tick+1);
-            if (GetTime() > 4) {
-                game_manager.OutputHistory();
+            local_game_state = game_manager.ApplyEvents(local_game_state, tick, tick+1);
+            if (tick % 5 * iters_per_sec == 0) local_game_state = game_state;
 
-                GameState state = {};
-                char buffer[MAX_STRING_LENGTH];
-                SerializeGameState(game_manager.ApplyEvents(first_received_game, first_received_game_tick, last_received_tick), buffer, MAX_STRING_LENGTH);
-                std::cout << last_received_tick << std::endl;
-                std::cout << std::endl << buffer << std::endl;
-                CloseWindow();
-            }
+            // if (GetTime() > 4) {
+            //     game_manager.OutputHistory();
+
+            //     GameState state = {};
+            //     char buffer[MAX_STRING_LENGTH];
+            //     SerializeGameState(game_manager.ApplyEvents(first_received_game, first_received_game_tick, last_received_tick), buffer, MAX_STRING_LENGTH);
+            //     std::cout << last_received_tick << std::endl;
+            //     std::cout << std::endl << buffer << std::endl;
+            //     CloseWindow();
+            // }
             tick += 1;
         }
     }
@@ -140,7 +144,7 @@ void Init() {
     });
     client->SetOnReceive(OnReceive);
 
-    client->RequestConnectToServer("45.159.79.84", 7777);
+    if (!client->ConnectToServer("127.0.0.1", 7777));
     // if (!client->ConnectToServer("127.0.0.1", 7777)) {
     //     client->RequestConnectToServer("45.159.79.84", 7777);
     // }    
@@ -162,12 +166,13 @@ void OnReceive(ENetEvent event) {
         {
         GameStatePacketData data = ExtractData<GameStatePacketData>(event.packet);
         auto rec_state = DeserializeGameState(data.text, MAX_STRING_LENGTH);
+        game_state = game_manager.ApplyEvents(rec_state, data.tick, tick-1);
         if (!received_game) {
             first_received_game = rec_state;
             first_received_game_tick = data.tick;
             received_game = true;
-        }
-        game_state = game_manager.ApplyEvents(rec_state, data.tick, tick);
+            local_game_state = game_state;
+        }        
         }
         break;
 
