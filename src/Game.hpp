@@ -16,6 +16,12 @@ constexpr double hor_speed = 60;
 constexpr double jump_impulse = 30;
 
 
+// client also uses that
+constexpr uint32_t tick_period = iters_per_sec/10; // broadcast game state every 100 ms
+constexpr uint32_t receive_tick_period = iters_per_sec; // allow late received events
+constexpr uint32_t send_tick_period = iters_per_sec*2; // sync client's tick with server's tick
+constexpr uint32_t server_lateness = receive_tick_period;
+
 enum EventId {
     EV_PLAYER_JOIN = 0,
     EV_PLAYER_LEAVE,
@@ -45,6 +51,13 @@ struct PlayerState {
 
 struct GameState {
     std::map<uint32_t, PlayerState> players;
+};
+
+struct DrawingData {
+    uint32_t special_id;
+    bool inc_exc_sp_id; // to include only the special id, or the other way around: leave only everybody else
+    Color color;
+    bool uses_special_id = true;
 };
 
 #define MAX_STRING_LENGTH 1024
@@ -118,8 +131,10 @@ public:
 
     virtual void Draw(const GameState& state, const void* data) {
         for (const auto& [id, player] : state.players) {
-            const Color* color = static_cast<const Color*>(data);
-            DrawCircleV(player.position, 10, *color);
+            const DrawingData* drawing_data = static_cast<const DrawingData*>(data);
+            if ((!drawing_data->uses_special_id) || (drawing_data->inc_exc_sp_id == (id == drawing_data->special_id))) {
+                DrawCircleV(player.position, 10, drawing_data->color);
+            }            
         }
     }
 
@@ -160,4 +175,41 @@ public:
             }
         }
     }
+
+    virtual GameState Lerp(const GameState& state1, const GameState& state2, float alpha, const void* data) {
+        alpha = fmin(1, fmax(0, alpha));
+        GameState lerped = state2;
+
+        const uint32_t* except_id = static_cast<const uint32_t*>(data);
+
+        for (auto& [id, player] : state2.players) {
+            if (id != *except_id) {
+                if (state1.players.find(id) != state1.players.end()) {
+                    lerped.players[id].position = Vector2Lerp(state1.players.at(id).position, state2.players.at(id).position, alpha);
+                }
+            }
+        }
+        return lerped;
+    };
+
+    // virtual GameState ConditionalLerp(const GameState& state0, const GameState& state1, const GameState& state2, float alpha, const void* data) {
+    //     alpha = fmin(1, fmax(0, alpha));
+    //     GameState lerped = state2;
+
+    //     const uint32_t* except_id = static_cast<const uint32_t*>(data);
+
+    //     for (auto& [id, player] : state2.players) {
+    //         if (id != *except_id) {
+    //             if (state1.players.find(id) != state1.players.end() && state2.players.find(id) != state2.players.end()) {
+    //                 lerped.players[id].position = Vector2Lerp(state1.players.at(id).position, state2.players.at(id).position, alpha);
+    //             }
+    //         }
+    //         else {
+    //             if (state0.players.find(id) != state0.players.end()) {
+    //                 lerped.players[id] = state0.players.at(id);
+    //             }                
+    //         }
+    //     }
+    //     return lerped;
+    // };
 };

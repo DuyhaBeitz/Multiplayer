@@ -6,14 +6,20 @@
 #include <memory>
 #include <iostream>
 
-GameState local_game_state{};
-
+// debug
 bool received_game = false;
 GameState first_received_game{};
 uint32_t last_received_tick = 0;
 uint32_t first_received_game_tick = 0;
 
-GameState game_state{};
+
+uint32_t ticks_since_last_recieved_game = 0;
+uint32_t prev_last_received_game_tick = 0;
+GameState prev_last_received_game{};
+uint32_t last_received_game_tick = 0;
+GameState last_received_game{};
+GameState others_game_state{};
+GameState self_game_state{};
 
 Game game_manager{};
 uint32_t tick = 0;
@@ -48,18 +54,6 @@ int main() {
             EndDrawing();
         }
         else {
-            BeginDrawing();
-            DrawText(std::to_string(tick).c_str(), 100, 100, 64, WHITE);
-            DrawText(std::to_string(client->GetPeer()->roundTripTime).c_str(), 100, 200, 64, WHITE);
-            
-            Color color = GREEN;
-            game_manager.Draw(game_state, &color);
-            color = RED;
-            game_manager.Draw(local_game_state, &color);            
-
-            ClearBackground(DARKGRAY);
-            EndDrawing();
-
             PlayerInput input;
             
             input.right = IsKeyDown(KEY_D);
@@ -78,9 +72,9 @@ int main() {
                 client->SendPacket(CreatePacket<PlayerInputPacketData>(MSG_PLAYER_INPUT, data, ENET_PACKET_FLAG_UNRELIABLE_FRAGMENT));
             }
             
-            game_state = game_manager.ApplyEvents(game_state, tick, tick+1);
-            local_game_state = game_manager.ApplyEvents(local_game_state, tick, tick+1);
-            if (tick % 5 * iters_per_sec == 0) local_game_state = game_state;
+            self_game_state = game_manager.ApplyEvents(self_game_state, tick, tick+1);
+            float alpha = float(ticks_since_last_recieved_game) / float(last_received_game_tick-prev_last_received_game_tick);
+            others_game_state = game_manager.Lerp(prev_last_received_game, last_received_game, alpha, &id);
 
             // if (GetTime() > 4) {
             //     game_manager.OutputHistory();
@@ -92,7 +86,20 @@ int main() {
             //     std::cout << std::endl << buffer << std::endl;
             //     CloseWindow();
             // }
-            tick += 1;
+            BeginDrawing();
+            DrawText(std::to_string(tick).c_str(), 100, 100, 64, WHITE);
+            DrawText(("roundtrip: " + std::to_string(client->GetPeer()->roundTripTime) + "ms").c_str(), 100, 200, 64, WHITE);
+            
+            DrawingData drawing_data = {id, true, GREEN};
+            game_manager.Draw(self_game_state, &drawing_data);
+            drawing_data = {id, false, RED};
+            game_manager.Draw(others_game_state, &drawing_data);
+
+            ClearBackground(DARKGRAY);
+            EndDrawing();
+
+            tick++;
+            ticks_since_last_recieved_game++;
         }
     }
     client->RequestDisconnectFromServer();
@@ -145,6 +152,7 @@ void Init() {
     client->SetOnReceive(OnReceive);
 
     client->RequestConnectToServer("45.159.79.84", 7777);
+    //client->RequestConnectToServer("127.0.0.1", 7777);
     // if (!client->ConnectToServer("127.0.0.1", 7777)) {
     //     client->RequestConnectToServer("45.159.79.84", 7777);
     // }    
@@ -164,14 +172,21 @@ void OnReceive(ENetEvent event) {
         
     case MSG_GAME_STATE:
         {
+        ticks_since_last_recieved_game = 0;
+        prev_last_received_game = last_received_game;
+        prev_last_received_game_tick = last_received_game_tick;
+
         GameStatePacketData data = ExtractData<GameStatePacketData>(event.packet);
         auto rec_state = DeserializeGameState(data.text, MAX_STRING_LENGTH);
-        game_state = game_manager.ApplyEvents(rec_state, data.tick, tick-1);
+        self_game_state = game_manager.ApplyEvents(rec_state, data.tick, tick-1);
+        
+        last_received_game = rec_state;
+        last_received_game_tick = data.tick;
+
         if (!received_game) {
             first_received_game = rec_state;
             first_received_game_tick = data.tick;
             received_game = true;
-            local_game_state = game_state;
         }        
         }
         break;

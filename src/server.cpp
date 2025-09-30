@@ -21,7 +21,7 @@ void OnDisconnect(ENetEvent event);
 void OnRecieve(ENetEvent event);
 void UpdateServer();
 
-#define WINDOW_VISUALIZATION 0
+#define WINDOW_VISUALIZATION 1
 
 int main(){
     if (WINDOW_VISUALIZATION) {
@@ -45,8 +45,8 @@ int main(){
 
             BeginDrawing();
             ClearBackground(GRAY);
-            Color color = BLUE;
-            game_manager.Draw(game_state, &color);
+            DrawingData drawing_data = {false, 0, BLUE, false};
+            game_manager.Draw(game_state, &drawing_data);
             EndDrawing();
         }
         CloseWindow();
@@ -120,12 +120,8 @@ void OnRecieve(ENetEvent event)
 void UpdateServer() {
     server->Update();
 
-    constexpr uint32_t tick_period = iters_per_sec/10; // broadcast game state every 100 ms
-    constexpr uint32_t receive_tick_period = iters_per_sec; // allow late received events
-    constexpr uint32_t send_tick_period = iters_per_sec*2; // sync client's tick with server's tick
-
     if (tick % tick_period == 0) {
-        uint32_t current_tick = tick-receive_tick_period;
+        uint32_t current_tick = tick-server_lateness;
 
         uint32_t previous_tick = current_tick - tick_period;
         uint32_t current_old_tick = current_tick - receive_tick_period;
