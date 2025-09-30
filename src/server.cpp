@@ -49,6 +49,7 @@ int main(){
             game_manager.Draw(game_state, &color);
             EndDrawing();
         }
+        CloseWindow();
     }
     else {
         auto next_tick = std::chrono::steady_clock::now();
@@ -66,8 +67,7 @@ int main(){
             std::this_thread::sleep_until(next_tick);
         }
     }
-    
-    CloseWindow();
+
     return 0;
 }
 
