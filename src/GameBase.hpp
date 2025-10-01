@@ -4,7 +4,7 @@
 #include <vector>
 #include <iostream>
 
-template<typename GameStateType, typename GameEventType>
+template<typename GameStateType, typename GameEventType, typename SerializedGameStateType>
 class GameBase {
 protected:
     // usage: m_event_history[tick][event_index].first() = player id, not all events use this
@@ -58,6 +58,9 @@ public:
     virtual void ApplyEvent(GameStateType& state, const GameEventType& event, uint32_t id) = 0;
     virtual void Draw(const GameStateType& state, const void* data) = 0;
     virtual void UpdateGameLogic(GameStateType& state) = 0;
+
+    virtual SerializedGameStateType Serialize(const GameStateType& state) = 0;
+    virtual GameStateType Deserialize(SerializedGameStateType data) = 0;
 
     virtual GameStateType Lerp(const GameStateType& state1, const GameStateType& state2, float alpha, const void* data) = 0;
     //virtual GameStateType ConditionalLerp(const GameStateType& state_0, const GameStateType& state1, const GameStateType& state2, float alpha, const void* data) = 0;

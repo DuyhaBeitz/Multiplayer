@@ -7,6 +7,9 @@
 
 #include <nlohmann/json.hpp>
 #include <fstream>
+#include <memory>
+
+constexpr int max_string_len = 1024;
 
 constexpr int iters_per_sec = 60;
 constexpr double dt = 1.f/iters_per_sec;
@@ -53,6 +56,17 @@ struct GameState {
     std::map<uint32_t, PlayerState> players;
 };
 
+struct SerializedGameState {
+    char text[max_string_len];
+    uint32_t tick;
+
+    SerializedGameState(const char* str) { 
+        std::strncpy(text, str, sizeof(text));
+        text[sizeof(text)-1] = '\0';
+    }
+    SerializedGameState() = default; // needed for packet data, because before copying the data, the lvalue is declared
+};
+
 struct DrawingData {
     uint32_t special_id;
     bool inc_exc_sp_id; // to include only the special id, or the other way around: leave only everybody else
@@ -60,45 +74,7 @@ struct DrawingData {
     bool uses_special_id = true;
 };
 
-#define MAX_STRING_LENGTH 1024
-
-inline size_t SerializeGameState(const GameState& state, char* buffer, size_t max_len) {
-    nlohmann::json j;
-
-    for (const auto& [id, player] : state.players) {
-        j["players"][std::to_string(id)] = {
-            {"px", player.position.x},
-            {"py", player.position.y},
-            {"vx", player.velocity.x},
-            {"vy", player.velocity.y}
-        };
-    }
-
-    std::string s = j.dump();
-    size_t len = std::min(max_len - 1, s.size());  // leave room for '\0'
-    std::memcpy(buffer, s.data(), len);
-    buffer[len] = '\0'; // null-terminate for safety
-    return len;         // return actual length
-}
-
-inline GameState DeserializeGameState(const char* buffer, size_t len) {
-    nlohmann::json j = nlohmann::json::parse(std::string(buffer, len));
-    GameState state;
-
-    for (auto& [id_str, player_json] : j["players"].items()) {
-        uint32_t id = static_cast<uint32_t>(std::stoul(id_str));
-        PlayerState ps;
-        ps.position.x = player_json["px"].get<float>();
-        ps.position.y = player_json["py"].get<float>();
-        ps.velocity.x = player_json["vx"].get<float>();
-        ps.velocity.y = player_json["vy"].get<float>();
-        state.players[id] = ps;
-    }
-
-    return state;
-}
-
-class Game : public GameBase<GameState, GameEvent> {
+class Game : public GameBase<GameState, GameEvent, SerializedGameState> {
 public:
     PlayerState InitNewPlayer(const GameState& state, uint32_t id) {
         return PlayerState{Vector2{0, 0}};
@@ -192,24 +168,32 @@ public:
         return lerped;
     };
 
-    // virtual GameState ConditionalLerp(const GameState& state0, const GameState& state1, const GameState& state2, float alpha, const void* data) {
-    //     alpha = fmin(1, fmax(0, alpha));
-    //     GameState lerped = state2;
+    virtual SerializedGameState Serialize(const GameState& state) {
+        nlohmann::json j;
+        for (const auto& [id, player] : state.players) {
+            j["players"][std::to_string(id)] = {
+                {"px", player.position.x},
+                {"py", player.position.y},
+                {"vx", player.velocity.x},
+                {"vy", player.velocity.y}
+            };
+        }
+        return SerializedGameState(j.dump().c_str());
+    }
 
-    //     const uint32_t* except_id = static_cast<const uint32_t*>(data);
-
-    //     for (auto& [id, player] : state2.players) {
-    //         if (id != *except_id) {
-    //             if (state1.players.find(id) != state1.players.end() && state2.players.find(id) != state2.players.end()) {
-    //                 lerped.players[id].position = Vector2Lerp(state1.players.at(id).position, state2.players.at(id).position, alpha);
-    //             }
-    //         }
-    //         else {
-    //             if (state0.players.find(id) != state0.players.end()) {
-    //                 lerped.players[id] = state0.players.at(id);
-    //             }                
-    //         }
-    //     }
-    //     return lerped;
-    // };
+    GameState Deserialize(SerializedGameState data) {
+        GameState state{};
+        nlohmann::json j = nlohmann::json::parse(std::string(data.text, max_string_len));
+        for (auto& [id_str, player_json] : j["players"].items()) {
+            uint32_t id = static_cast<uint32_t>(std::stoul(id_str));
+            PlayerState ps;
+            ps.position.x = player_json["px"].get<float>();
+            ps.position.y = player_json["py"].get<float>();
+            ps.velocity.x = player_json["vx"].get<float>();
+            ps.velocity.y = player_json["vy"].get<float>();
+            state.players[id] = ps;
+        }
+        return state;
+    }
 };
+
