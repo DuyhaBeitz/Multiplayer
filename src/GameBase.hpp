@@ -48,9 +48,11 @@ public:
     }
 
     void DropEventHistory(uint32_t last_dropped_tick) {
-        for (auto& [tick, events] : m_event_history) {
-            if (tick <= last_dropped_tick) {
-                m_event_history.erase(tick);
+        for (auto it = m_event_history.begin(); it != m_event_history.end(); ) {
+            if (it->first <= last_dropped_tick) {
+                it = m_event_history.erase(it);
+            } else {
+                ++it;
             }
         }
     }

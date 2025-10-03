@@ -40,6 +40,7 @@ public:
 
             ENetPacket* packet = CreatePacket<SerializedGameState>(MSG_GAME_STATE, data);
             m_server->Broadcast(packet);     
+            DropEventHistory(previous_old_tick);
         }
 
         m_tick++;
