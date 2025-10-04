@@ -79,7 +79,7 @@ public:
     }
 
     void OnReceive(ENetEvent event) {
-        MessageType msgType = static_cast<MessageType>(event.packet->data[0]);
+        MessageType msgType = ExtractMessageType(event.packet);
         switch (msgType) {
         case MSG_GAME_TICK:
             m_tick = CalculateTickWinthPing(ExtractData<uint32_t>(event.packet));

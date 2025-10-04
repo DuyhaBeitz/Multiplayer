@@ -64,7 +64,7 @@ public:
 
     void OnRecieve(ENetEvent event)
     {
-        MessageType msgType = static_cast<MessageType>(event.packet->data[0]);
+        MessageType msgType = ExtractMessageType(event.packet);
         switch (msgType) {
         case MSG_PLAYER_INPUT:
             {
