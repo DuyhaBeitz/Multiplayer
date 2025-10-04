@@ -38,7 +38,7 @@ int main() {
 
 void Init() {
     EasyNetInit();
-    InitWindow(1000, 1000, "Multiplayer");
+    InitWindow(1000, 1000, "Client");
     SetWindowState(FLAG_WINDOW_TOPMOST);
     SetTargetFPS(iters_per_sec);
 

@@ -40,6 +40,14 @@ struct PlayerInput {
     bool up;
 
     float GetX() { return right - left; }
+    
+    bool IsEmpty() { return GetX() == 0 & !up; }
+    
+    void Detect() {    
+        right = IsKeyDown(KEY_D);
+        left = IsKeyDown(KEY_A);
+        up = IsKeyPressed(KEY_W);
+    }
 };
 
 struct GameEvent {

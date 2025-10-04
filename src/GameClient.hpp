@@ -42,12 +42,9 @@ public:
 
     void Update() {
             PlayerInput input;
-            
-            input.right = IsKeyDown(KEY_D);
-            input.left = IsKeyDown(KEY_A);
-            input.up = IsKeyPressed(KEY_W);
+            input.Detect();
 
-            if (input.GetX() != 0 || input.up) {
+            if (!input.IsEmpty()) {
                 GameEvent event;
                 event.event_id = EV_PLAYER_INPUT;
                 event.data = input;
@@ -62,19 +59,7 @@ public:
             m_self_game_state = ApplyEvents(m_self_game_state, m_tick, m_tick+1);
             float alpha = float(m_ticks_since_last_recieved_game) / float(m_last_received_game_tick-m_prev_last_received_game_tick);
             m_others_game_state = Lerp(m_prev_last_received_game, m_last_received_game, alpha, &m_id);
-
-            // if (GetTime() > 4) {
-            //     game_manager.OutputHistory();
-
-            //     GameState state = {};
-            //     char buffer[max_string_len];
-            //     SerializeGameState(game_manager.ApplyEvents(first_received_game, first_received_game_tick, last_received_tick), buffer, max_string_len);
-            //     std::cout << last_received_tick << std::endl;
-            //     std::cout << std::endl << buffer << std::endl;
-            //     CloseWindow();
-            // }
-
-
+ 
             m_tick++;
             m_ticks_since_last_recieved_game++;
     }
